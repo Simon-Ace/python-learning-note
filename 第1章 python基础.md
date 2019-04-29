@@ -160,7 +160,7 @@ Game.print_menu()
 game.print_menu()
 ```
 
-**12. 为什么要继承 object 类？**
+**12. 为什么要继承 object 类？**z
 
 继承 object 类的是新式类，不继承 object 类的是经典类，在 Python 2.7 里面新式类和经典类在多继承方面会有差异，在 Python 3.x 中的新式类貌似已经兼容了经典类
 

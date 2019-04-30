@@ -2,7 +2,85 @@
 
 ## （一）python核心编程
 
-### 1. 
+### 1. 闭包
+
+### 2. 装饰器
+
+<font color=coral>开放封闭原则：</font>已实现功能的代码不被修改，但可以扩展
+
+使用示例：
+
+```python
+def w1(func):
+    def inner():
+        print("----正在验证权限----")
+        if True:
+            return func()
+        else:
+            print("----没有权限----")
+    return inner
+
+@w1
+def f1():
+    print("----f1----")
+
+f1()
+
+# 执行原理
+f1 = w1(f1)
+f1()
+```
+
+执行顺序：
+
+- <u>装饰的时候从下往上装饰，调用时从上往下调用</u>
+  - 有多个装饰器，在前面的装饰器会先不装饰，等着下面的都装饰好才装饰
+  - 注意下面代码中函数和闭包的执行顺序，以及返回值的装饰顺序
+- 装饰器执行时间
+  - 只要python解释器执行到了这个代码，就会自动的进行装饰，而不是等到调用的时候才装饰的
+
+```python
+def makeBold(func):
+    print("----①makeBold 正在装饰----")
+
+    def wrapped():
+        print("----①makeBold 正在验证----")
+        return "<b>" + func() + "</b>"
+    return wrapped
+
+def makeItalic(func):
+    print("----②makeItalic 正在装饰----")
+
+    def wrapped():
+        print("----②makeItalic 正在验证----")
+        return "<i>" + func() + "</i>"
+
+    return wrapped
+
+@makeBold
+@makeItalic
+def get_string():
+    print("----print_string 正在执行 ----")
+    return "hello world!"
+
+print(get_string())
+
+# ---- 运行结果 ----
+----②makeItalic 正在装饰----
+----①makeBold 正在装饰----
+----①makeBold 正在验证----
+----②makeItalic 正在验证----
+----print_string 正在执行 ----
+<b><i>hello world!</i></b>
+```
+
+
+
+### 3. 生成器
+
+
+
+### 4. 小知识点
 
 （1）模块循环导入：
 
@@ -33,6 +111,16 @@ d = copy.copy(a) #只拷贝一层，（感觉不会用）
 类中的私有属性：
 
 python中其实是个假private类型，私有属性的名字重整为`_Class__object`
+
+（5）获取模块查找路径
+
+```python
+import sys
+sys.path
+
+# 添加路径
+sys.path.append("path-to-your-file")
+```
 
 （5）属性 property
 
@@ -83,18 +171,6 @@ print(t.num)
 
 
 
----
+### 
 
-### 小知识点：
 
-1. 获取模块查找路径
-
-   ```python
-   import sys
-   sys.path
-   
-   # 添加路径
-   sys.path.append("path-to-your-file")
-   ```
-
-   

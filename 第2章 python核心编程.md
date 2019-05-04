@@ -4,9 +4,25 @@
 
 ### 1. 闭包
 
+- 在函数内再定义一个函数，并且这个函数用到了外边函数的变量，那么将「这个函数以及用到的变量」统称为闭包
+  - 用到的上一层函数的变量，只能用不能改值，否则要加`nonlocal`关键字
+
+```python
+def test_fun(number):
+    def test_in(number2):
+        print(number + number2)
+    return test_in
+
+ret = test_fun(100)
+ret(1)
+ret(200)
+```
+
+
+
 ### 2. 装饰器
 
-<font color=coral>开放封闭原则：</font>已实现功能的代码不被修改，但可以扩展
+1） <font color=coral>开放封闭原则：</font>已实现功能的代码不被修改，但可以扩展
 
 使用示例：
 
@@ -31,7 +47,7 @@ f1 = w1(f1)
 f1()
 ```
 
-执行顺序：
+2） 执行顺序：
 
 - <u>装饰的时候从下往上装饰，调用时从上往下调用</u>
   - 有多个装饰器，在前面的装饰器会先不装饰，等着下面的都装饰好才装饰
@@ -74,9 +90,141 @@ print(get_string())
 <b><i>hello world!</i></b>
 ```
 
+3） 对带参数的函数进行装饰
 
+- 在装饰器闭包部分要写上对应的参数
+
+```python
+def decor(func):
+    def decor_in(a, b):
+        print("----decorate func----")
+        func(a, b)
+    return decor_in
+
+@decor
+def ori_func(a, b):
+    print("----ori_func: %d, %d----" % (a, b))
+
+ori_func(1,2)
+```
+
+- 不定长参数
+
+```python
+def decor(func):
+    def decor_in(*args, **kwargs):
+        print("----decorate func----")
+        func(*args, **kwargs)
+    return decor_in
+
+@decor
+def ori_func(a, b):
+    print("----ori_func: %d, %d----" % (a, b))
+
+@decor
+def ori_func1(a, b, c):
+    print("----ori_func1: %d, %d, %d----" % (a, b, c))
+
+ori_func(1,2)
+ori_func1(3, 4, 5)
+```
+
+4） 带返回值的函数
+
+- 装饰器内添加return语句
+
+```python
+def decor(func):
+    def decor_in(*args, **kwargs):
+        print("----decorate func----")
+        sum = func(*args, **kwargs)
+        return sum
+    return decor_in
+
+@decor
+def ori_func(a, b):
+    print("----ori_func: %d, %d----" % (a, b))
+    return a + b
+
+sum = ori_func(1,2)
+print(sum)
+```
+
+5）通用装饰器
+
+```python
+def decor(func):
+    def decor_in(*args, **kwargs):
+        print("----log日志----")
+        ret = func(*args, **kwargs)
+        return ret
+    return decor_in
+```
+
+6）带参数的装饰器
+
+- 可以用于在运行时根据参数起不同的装饰作用
+
+```python
+def decor_arg(arg):
+    def decor(func):
+        def decor_in():
+            print("----log日志----")
+            if arg == "haha":
+                func()
+                func()
+            else:
+                func()
+        return decor_in
+    return decor
+
+@decor_arg("haha")
+def ori_fun1():
+    print("测试函数1")
+
+@decor_arg("heihei")
+def ori_fun2():
+    print("测试函数2")
+
+ori_fun1()
+ori_fun2()
+```
 
 ### 3. 生成器
+
+- 基本用法
+
+```python
+# 斐波那契数列
+def creatNum():
+    a, b = 0, 1
+    for i in range(10):
+        yield b
+        a, b = b, a+b
+
+a = creatNum()
+for i in a:
+    print(i)
+```
+
+- send 用法
+  - 可作为yield的返回值
+  - 但要注意：不可作为第一次迭代时使用，或者用`a.send(None)`
+
+```python
+def test_fun():
+    i = 0
+    while i < 5:
+        temp = yield i
+        print(temp)
+        i += 1
+
+a = test_fun()
+print(next(a))
+a.send("haha")
+```
+
+
 
 
 
@@ -169,8 +317,29 @@ t.num = 100
 print(t.num)
 ```
 
+（6）作用域
+
+查找符号对应对象的顺序：LEGB
+
+`locals -> enclosing function -> globals -> builtins`
+
+（7）给实例对象添加方法
+
+```python
+def eat(self):
+    print("----%s在吃----" % self.name)
+
+p1 = Person()
+p1.eat = types.MethodType(eat, p1) #前面写p1.eat只是为了方便辨认，其实可以随便写，这里已经把p1当做第一个参数传给eat了，返回的是一个函数指针
+```
+
+（8）限制类能添加的属性
+
+```python
+class Person(Object):
+    __slots__ = ("name", "age")
+```
 
 
-### 
 
 

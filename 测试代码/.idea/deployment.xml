@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData">
+  <component name="PublishConfigData" serverName="bistu@192.168.25.3:22">
     <serverData>
+      <paths name="bistu@192.168.25.3:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/bistu/Projects/python就业班代码" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="dell@192.168.40.20:22">
         <serverdata>
           <mappings>

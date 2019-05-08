@@ -2,6 +2,8 @@
 
 [TOC]
 
+[这里有所有上课的笔记](https://www.jianshu.com/u/2e46779cd343)
+
 ## 一、python核心编程
 
 ### 1. 闭包
@@ -391,6 +393,8 @@ ret: 0
 
 ##### （2）全局变量在多个进程中不共享
 
+- 相当于是有一整份完整的新代码
+
 ```python
 import os
 import time
@@ -620,6 +624,428 @@ if __name__ == "__main__":
 
 ##### （9）实战：多进程拷贝文件
 
-- 详见代码
+- [详见代码](.\测试代码\第2章 python核心编程\（二）Linux系统编程\8_实战-多进程拷贝文件.py)
+
+##### （10）孤儿进程与僵尸进程
+
+[孤儿进程与僵尸进程[总结] - Rabbit_Dale - 博客园](https://www.cnblogs.com/Anker/p/3271773.html)
+
+- 孤儿进程：一个父进程退出，而它的一个或多个子进程还在运行，那么那些子进程将成为孤儿进程。孤儿进程将被init进程(进程号为1)所收养，并由init进程对它们完成状态收集工作。
+
+- 僵尸进程：一个进程使用fork创建子进程，如果子进程退出，而父进程并没有调用wait或waitpid获取子进程的状态信息，那么子进程的进程描述符仍然保存在系统中。这种进程称之为僵尸进程。
+
+
 
 #### 2 线程
+
+进程是资源分配的单位，线程是CPU调度的单位（是进程里面真正执行代码的东西）
+
+##### （1）Thread创建多线程
+
+```python
+from threading import Thread
+from time import sleep
+
+def fun():
+    print("hahaha")
+    sleep(1)
+
+for i in range(5):
+    t = Thread(target=fun)
+    t.start()
+```
+
+##### （2）使用Thread子类创建线程
+
+```python
+from threading import Thread
+from time import sleep
+
+class MyThread(Thread):
+    def run(self):
+        for i in range(3):
+            print("I'm " + self.name + '@' + str(i))
+            sleep(1)
+
+t = MyThread()
+t.start()
+```
+
+##### （3）线程执行顺序
+
+- 无序，看CPU如何调度
+
+```python
+from threading import Thread
+from time import sleep
+
+class MyThread(Thread):
+    def run(self):
+        for i in range(5):
+            print("----%s---%d---" % (self.name, i))
+            sleep(1)
+
+for k in range(3):
+    t = MyThread()
+    t.start()
+```
+
+##### （4）线程共享全局变量的问题
+
+- 对于线程来说只有「一份代码」，不像进程来说相当于有「多份代码」互不干涉
+  - 因此对于同一个全局变量，一个线程把它修改之后，另一个线程会获取到修改后的值
+  - 把列表当做参数传到函数中也一样，（数值类型不行）
+- **问题：**两个线程对一个变量同时赋值的时候可能会出现bug
+  - 原因解释：`a = a+1`这其实可以看为两个步骤，①`a+1`②将`a+1`的值赋给`a`
+
+```python
+from threading import Thread
+import time
+
+g_num = 0
+
+def test1():
+    global g_num
+    for i in range(2000000):
+        g_num += 1
+    print("---test1---g_num=%d"%g_num)
+
+def test2():
+    global g_num
+    for i in range(2000000):
+        g_num += 1
+    print("---test2---g_num=%d"%g_num)
+
+p1 = Thread(target=test1)
+p1.start()
+
+#time.sleep(3) #取消屏蔽之后 再次运行程序，结果会不一样
+
+p2 = Thread(target=test2)
+p2.start()
+# 两个线程执行完毕后，g_num!=4000000
+
+print("---g_num=%d---"%g_num)
+
+# ------------OTUPUT--------------
+'''
+g_num最后不等于4000000
+---g_num=353882---
+---test1---g_num=2209395
+---test2---g_num=2376780
+'''
+```
+
+##### （5）解决变量被同时修改的问题 —— 互斥锁
+
+- 方法1（不推荐）：**轮询**
+  - 加一个新的全局变量，改之前先判断哪个线程满足，满足的执行，不满足的用个`while True`一直查询着，等上一个执行完再执行
+  - 可以解决同时修改的问题，但也把多线程任务变成了“单线程”，且一直查询的过程会消耗GPU资源
+- 方法2（推荐）：**互斥锁**
+  - 一个线程在用的时候，另一个等待。不同于「轮询」的是，不会一直占着CPU资源，等待的过程中那个线程其实是休眠的
+  - 只把不同线程都要修改的地方包起来，范围越小越好
+  - 会影响性能，比没加互斥锁的时候慢了很多
+  - `threading.Lock()`，获取`lock.acquire()`，释放`lock.release()`
+  - 有多个锁的时候怎么搞？？（创建多个`Lock()`实例）
+
+```python
+from threading import Thread, Lock
+
+g_num = 0
+
+def test1():
+    global g_num
+    for i in range(1000000):
+        # 这个线程和test2的线程都在抢这个锁，准备对下面的部分进行上锁，如果一方成功上锁，会导致另一方堵塞（休眠），直到开锁重新抢
+        mutex.acquire()
+        g_num += 1
+        mutex.release() #解锁
+
+    print("---test1---g_num=%d"%g_num)
+
+def test2():
+    global g_num
+    for i in range(1000000):
+        mutex.acquire()
+        g_num += 1
+        mutex.release()
+
+    print("---test2---g_num=%d"%g_num)
+
+# 创建一个互斥锁，默认是开锁的
+mutex = Lock()
+p1 = Thread(target=test1)
+p1.start()
+
+p2 = Thread(target=test2)
+p2.start()
+
+print("---g_num=%d---"%g_num)
+```
+
+##### （6）多线程使用非共享变量
+
+- 每个线程有一份，互不影响
+
+##### （7）死锁及解决办法
+
+- 是指两个或两个以上的进程或线程在执行过程中，因争夺资源而造成的一种互相等待的现象，若无外力作用，它们都将无法推进下去
+- 如：有两个线程两把锁。线程1锁住A锁，线程2锁住B锁 -> 线程1此时需要B锁住的内容，线程2需要A锁住的内容，互不相让，程序卡死在这里
+
+```python
+import threading
+import time
+
+class MyThread1(threading.Thread):
+    def run(self):
+        if mutexA.acquire():
+            print(self.name+'----do1---up----')
+            time.sleep(1)
+
+            if mutexB.acquire():
+                print(self.name+'----do1---down----')
+                mutexB.release()
+            mutexA.release()
+
+class MyThread2(threading.Thread):
+    def run(self):
+        if mutexB.acquire():
+            print(self.name+'----do2---up----')
+            time.sleep(1)
+            if mutexA.acquire():
+                print(self.name+'----do2---down----')
+                mutexA.release()
+            mutexB.release()
+
+mutexA = threading.Lock()
+mutexB = threading.Lock()
+
+if __name__ == '__main__':
+    t1 = MyThread1()
+    t2 = MyThread2()
+    t1.start()
+    t2.start()
+```
+
+- 解决办法：
+  - 尽量避免这种情况
+  - 给`acquire()`函数添加参数
+
+```python
+acquire(blocking=True, timeout=-1)
+# blocking设为False，则为非阻塞状态，被锁住了就直接跳过；timeout为等待时间
+'''
+Acquire a lock, blocking or non-blocking.
+
+When invoked with the blocking argument set to True (the default), block until the lock is unlocked, then set it to locked and return True.
+
+When invoked with the blocking argument set to False, do not block. If a call with blocking set to True would block, return False immediately; otherwise, set the lock to locked and return True.
+
+When invoked with the floating-point timeout argument set to a positive value, block for at most the number of seconds specified by timeout and as long as the lock cannot be acquired. A timeout argument of -1 specifies an unbounded wait. It is forbidden to specify a timeout when blocking is false.
+
+The return value is True if the lock is acquired successfully, False if not (for example if the timeout expired).
+'''
+```
+
+##### （8）同步和异步 & 阻塞和非阻塞
+
+- 同步是指「协同步调」按预定的先后次序运行。如：你说完，我再说
+- 异步就是「谁先执行不确定」
+
+> [怎样理解阻塞非阻塞与同步异步的区别？ - 愚抄的回答 - 知乎](https://www.zhihu.com/question/19732473/answer/23434554)
+>
+> 1 老张把水壶放到火上，立等水开。（同步阻塞）
+> 老张觉得自己有点傻
+> 2 老张把水壶放到火上，去客厅看电视，时不时去厨房看看水开没有。（同步非阻塞）
+> 老张还是觉得自己有点傻，于是变高端了，买了把会响笛的那种水壶。水开之后，能大声发出嘀~~~~的噪音。
+> 3 老张把响水壶放到火上，立等水开。（异步阻塞）
+> 老张觉得这样傻等意义不大
+> 4 老张把响水壶放到火上，去客厅看电视，水壶响之前不再去看它了，响了再去拿壶。（异步非阻塞）
+
+##### （9）同步的使用
+
+- 通过互斥锁，来保证执行顺序
+
+```python
+from threading import Thread, Lock
+from time import sleep
+
+def fun1():
+    while True:
+        if lock1.acquire():
+            print("----task1----")
+            sleep(0.5)
+            lock2.release()
+
+def fun2():
+    while True:
+        if lock2.acquire():
+            print("----task2----")
+            sleep(0.5)
+            lock3.release()
+
+def fun3():
+    while True:
+        if lock3.acquire():
+            print("----task3----")
+            sleep(0.5)
+            lock1.release()
+
+lock1 = Lock()
+lock2 = Lock()
+lock3 = Lock()
+
+lock2.acquire()
+lock3.acquire()
+
+t1 = Thread(target=fun1)
+t2 = Thread(target=fun2)
+t3 = Thread(target=fun3)
+
+t1.start()
+t2.start()
+t3.start()
+```
+
+##### （10）生产者与消费者模式
+
+- 原因：当有两个线程速度不匹配时，为防止资源浪费，在两个线程之间建立一个缓冲区域「队列」
+- 目的：给生产者和消费者解耦
+- 注意：导包问题从queue里面导，别和进程里面那个混了
+
+```python
+from queue import Queue
+from time import sleep
+from threading import Thread, current_thread
+
+def producer():
+    global que
+    count = 0
+    while 1:
+        if que.qsize() < 1000:
+            for i in range(50):
+                count += 1
+                msg = "%s produced item %d" % (current_thread().name, count)
+                que.put(msg)
+                print(msg)
+        sleep(0.5)
+
+def consumer():
+    global que
+    while 1:
+        if que.qsize() > 100:
+            for i in range(5):
+                msg = " %s consume %s" % (current_thread().name, que.get())
+                print(msg)
+        sleep(1)
+
+
+que = Queue()
+
+for i in range(100):
+    que.put("origin item %d" % i)
+
+for i in range(5):
+    csm = Thread(target=consumer)
+    csm.start()
+
+for i in range(3):
+    pdc = Thread(target=producer)
+    pdc.start()
+```
+
+##### （11）多线程传递参数
+
+- 问题：多线程传递变量时的麻烦
+  - 将变量作为参数传到函数中——若参数多的时候太麻烦
+  - 将变量改成全局变量——多线程之间又会互相影响
+  - 使用全局字典（每个线程作为独特的键进行存储）——麻烦，且不便于理解？
+  - **「ThreadLocal」**—— 这个东西创建出来对象的属性，在各个线程之间互不干扰（是同一个属性名也没事）
+
+```python
+import threading
+
+# 创建全局ThreadLocal对象:
+local_school = threading.local()
+
+def process_student():
+    # 获取当前线程关联的student:
+    std = local_school.student
+    print('Hello, %s (in %s)' % (std, threading.current_thread().name))
+
+def process_thread(name):
+    # 绑定ThreadLocal的student:
+    local_school.student = name
+    process_student()
+
+t1 = threading.Thread(target= process_thread, args=('dongGe',), name='Thread-A')
+t2 = threading.Thread(target= process_thread, args=('老王',), name='Thread-B')
+t1.start()
+t2.start()
+```
+
+##### （12）异步的实现（进程）
+
+- 正在做一件事，但不知道做到什么时候，做事的期间去做另外一件事
+
+```python
+from multiprocessing import Pool
+from time import sleep
+import os
+
+def fun():
+    print("---进程池中的进程---pid=%d, ppid=%d---" % (os.getpid(), os.getppid()))
+    for i in range(3):
+        print("---%d---" % i)
+        sleep(1)
+    return "haha"
+
+# 这个函数是主进程执行的，但是执行的时候主进程在sleep，体现了异步的思想
+def fun_callback(args):
+    print("---callback func--pid=%d---" % os.getpid())
+    print("---callback func--args=%s---" % args)
+
+
+if __name__ == '__main__':
+    pool = Pool(3)
+
+    for i in range(3):
+        pool.apply_async(fun, callback=fun_callback)
+
+    pool.close()
+    pool.join()
+
+    sleep(5)
+    print("---主进程结束---")
+```
+
+##### （13）GIL问题
+
+[谈谈python的GIL、多线程、多进程 - 知乎](https://zhuanlan.zhihu.com/p/20953544)
+
+- GIL的全称是Global Interpreter Lock（全局解释器锁）
+  - python下多线程是鸡肋，推荐使用多进程！
+  - python下想要充分利用多核CPU，就用多进程
+- 在Python多线程下，每个线程的执行方式：
+  - 1.获取GIL
+    2.执行代码直到sleep或者是python虚拟机将其挂起。
+    3.释放GIL
+  - 可见，某个线程想要执行，必须先拿到GIL，我们可以把GIL看作是“通行证”，并且在一个python进程中，GIL只有一个。拿不到通行证的线程，就不允许进入CPU执行
+  - 而每次释放GIL锁，线程进行锁竞争、切换线程，会消耗资源。并且由于GIL锁存在，**python里一个进程永远只能同时执行一个线程**(拿到GIL的线程才能执行)，这就是为什么在多核CPU上，python的多线程效率并不高
+- GIL设计原因 —— 数据安全
+  - 多线程资源共享，意味着数据的安全性遇到挑战，而多个进程之间的数据是独立的
+  - 由于多线程的资源共享就不可避免的遇到线程安全问题，即同一时刻，必须保证只有一个线程对共享资源进行修改，加锁就是一种同步机制
+
+##### （14）多线程和多进程
+
+- 由于GIL锁的存在，多线程在Python中只能交替执行，即使100个线程跑在100核CPU上，也只能用到1个核
+- Python虽然不能利用多线程实现多核任务，但可以通过多进程实现多核任务。多个Python进程有各自独立的GIL锁，互不影响
+
+| **对比维度**  | **多进程**  | **多线程**   | **总结** |
+| ------------ | ------------ | ------------ | ---------- |
+| 数据共享、同步 | 数据共享复杂，需要用IPC；数据是分开的，同步简单              | 因为共享进程数据，数据共享简单，但也是因为这个原因导致同步复杂 | 各有优势 |
+| 内存、CPU      | 占用内存多，切换复杂，CPU利用率低  | 占用内存少，切换简单，CPU利用率高  | 线程占优 |
+| 创建销毁、切换 | 创建销毁、切换复杂，速度慢  | 创建销毁、切换简单，速度很快| 线程占优 |
+| 编程、调试 | 编程简单，调试简单| 编程复杂，调试复杂| 进程占优 |
+| 可靠性 | 进程间不会互相影响 | 一个线程挂掉将导致整个进程挂掉| 进程占优 |
+| 分布式 | 适应于多核、多机分布式；如果一台机器不够，扩展到多台机器比较简单 | 适应于多核分布式| 进程占优 |

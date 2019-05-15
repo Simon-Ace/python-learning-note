@@ -1072,8 +1072,8 @@ if __name__ == '__main__':
 - 端口分配
   - 知名端口（Well Known Ports）：
     - 0~1023 （自己的程序不可以占用这些端口）
-    - `80端⼝分配给HTTP服务
-      21端⼝分配给FTP服务`
+    - `80端口分配给HTTP服务
+      21端口分配给FTP服务`
   - 动态端口（Dynamic Ports）：
     - 1024~65535
 
@@ -1092,10 +1092,83 @@ if __name__ == '__main__':
   - 「网络号+最大的主机号」为广播地址
   - 如网络号为`192.168.119`，那么`192.168.119.0`为网络号；`192.168.119.255`为广播地址
 
-#### 2 ★socket（套接字）简介
+#### 2 ★socket（套接字）
 
-通过网络使**进程**间通信的方式
+##### （1）socket简介
 
+- 通过网络使**进程**间通信的方式
+- **tcp**慢 稳定 **udp**快 容易丢数据
+  - udp类似于写信
+    - 每一封信都有收件人的地址
+    - 不稳定（信丢了就丢了），但是在局域网中丢包率极低
+  - tcp类似于打电话
+    - 只有打电话的时候有地址，建立好通路之后，就不需要了
+    - 稳定（可重播）
 
+##### （2）创建socket 
 
-tcp慢 稳定 udp快 容易丢数据
+在另一台Ubuntu电脑进行监听
+`sudo tcpdump udp port 8080 -A`
+
+```python
+from socket import *
+
+# AF_INET:用于 Internet 进程间通信; SOCK_STREAM（流式套接字，主要⽤于# TCP 协议）,SOCK_DGRAM（数据报套接字，主要用于 UDP 协议）
+udpsocket = socket(AF_INET, SOCK_DGRAM)
+# 使用UDP发送数据，每一次都要写上接收方的ip和port
+udpsocket.sendto(b"what's that", ('192.168.25.3', 8080))
+```
+
+- 每重新运行一次程序端口号都不一样
+- 同一个os中不允许两个进程有同一个端口，因为会造成冲突
+
+##### （3）udp绑定信息
+
+- 请求方一般不绑定端口，接收方要绑定，告诉另外一方你监听的接口
+
+```python
+from socket import *
+
+udpsocket = socket(AF_INET, SOCK_DGRAM)
+udpsocket.bind(("", 7777)) #第一个是ip地址，空表示本机ip
+
+# 发送
+# udpsocket.sendto(b"constant port data", ('192.168.25.3', 8080))
+
+# 接收
+while 1:
+    recv_data = udpsocket.recvfrom(1024)
+    print(recv_data)
+```
+
+##### （4）单工、半双工、全双工
+
+- 单工
+  - 只能收或只能发信息（只具备一项功能，如收音机）
+- 半双工
+  - 双方都能收发信息，但同一时间只能有一方发信息
+- 全双工
+  - 可同时收发
+
+##### （5）编码问题
+
+- 前面发送的时候，字符串前面都要加个`b`，使用bytes类型发送
+  - 有个问题是，只能编码常用（原始）的asc字符，其他的会乱码
+- 指定编解码（注意双方要对应，常用的`utf-8`、`gb2312`）
+  - 发送时：`data.encode("utf-8")`
+  - 接收时：`content.decode("utf-8")`
+
+##### （6）udp网络通信过程
+
+![2-3-1-2-6 udp网络通信过程](https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-1-2-6%20udp%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1%E8%BF%87%E7%A8%8B.jpg)
+
+[IP地址和MAC地址的区别和联系是什么？ - neevek的回答 - 知乎](https://www.zhihu.com/question/49335649/answer/120746792)
+
+- 到这里你可能还有疑问，假设没有 IP，只用 MAC 就不能实现这种超远程的互联吗？答案是可以的，但那样会失去很多的灵活性，因为 MAC 是全局唯一的，不存在『MAC 子网』这样的东西，意味着只使用 MAC 没办法创建子网络，全人类只有唯一一个大网络。
+
+##### （7）多线程聊天
+
+[详见代码](.\测试代码\第2章 python核心编程\第3节 网络编程\1 网络编程概述、socket\4_多线程聊天.py)
+
+- 用多线程解决
+- print函数改了end参数后，记得加flush让其立马显示

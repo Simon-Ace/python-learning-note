@@ -1172,3 +1172,53 @@ while 1:
 
 - 用多线程解决
 - print函数改了end参数后，记得加flush让其立马显示
+
+### （二）TFTP文献下载器
+
+#### 1 wireshark入门使用
+
+##### （1）安装
+
+官网下载安装即可。其中WinPcap（现在改成Ucap）USBPcap都要安装
+
+##### （2）简单使用
+
+- 抓包界面
+
+![2-3-2-1-2_wireshark抓包界面](https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-2-1-2_wireshark%E6%8A%93%E5%8C%85%E7%95%8C%E9%9D%A2.jpg)
+
+- 过滤规则
+  - 筛选ip：`ip.src==192.168.25.3`or`ip.dst==192.168.25.4`
+  - 网络协议：`udp`、`tcp`等
+  - 端口：`udp.port==7777`
+  - 多个规则：`规则1 and 规则2` 、`or`
+
+#### 2 TFTP下载器
+
+##### （1）TFTP简介
+
+- Trivial File Transfer Protocol，简单文件传输协议
+- TFTP软件界面
+  - ![2-3-2-2-1_tftp界面](https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-2-2-1_tftp%E7%95%8C%E9%9D%A2.jpg)
+
+##### （2）TFTP协议
+
+![](https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-2-2-2_tftp%E5%8D%8F%E8%AE%AE.jpg)
+
+##### （3）tftp下载器
+
+[详见代码](.\测试代码\第2章 python核心编程\第3节 网络编程\2 TFTP文件下载器\2_tftp下载器.py)
+
+代码流程：
+
+1. 创建socket
+2. 发送下载文件的请求
+3. 接收服务发送回来的应答数据
+4. 返回响应（正确收到数据）
+   or 输出错误代码
+5. 写个循环重复接收
+6. 当recv_data数据长度小于516跳出循环
+7. 向文件中写入
+   若请求错误删除文件
+8. 错误重传的检查
+9. 大文件的块标号循环（最大65535）

@@ -1196,7 +1196,7 @@ if __name__ == '__main__':
   - 「网络号+最大的主机号」为广播地址
   - 如网络号为`192.168.119`，那么`192.168.119.0`为网络号；`192.168.119.255`为广播地址
 
-#### 2 ★socket（套接字）
+#### 2 ★socket（套接字） UDP
 
 ##### （1）socket简介
 
@@ -1300,7 +1300,7 @@ while True:
 
 
 
-### （二）TFTP文献下载器
+### （二）TFTP文件下载器、TCP编程
 
 #### 1 wireshark入门使用
 
@@ -1350,8 +1350,70 @@ while True:
 8. 错误重传的检查
 9. 大文件的块标号循环（最大65535）
 
+#### 3 TCP编程
 
+##### （1）tcp相关介绍
 
-### （三）网络通信过程
+- TCP：Transmission Control Protocol 传输控制协议
+  - 特点：稳定、相对UDP慢一点点、web服务器用tcp 
+- UDP：User Datagram Protocol 用户数据报协议
+  - 特点：不稳定
 
-#### 1 udp广播
+##### （2）tcp服务器
+
+- `socket(xxx)` —— 买个手机
+- `bind(xxx)` —— 插入手机卡（一个固定的电话号码「端口」）
+- `listen(xxx)` —— 手机设置为响铃模式？（将套接字变为可以被动链接）
+- `accept(xxx)` —— 等待接收电话，接收后会创建一个新的电话（socket）用于和客户端链接
+- `recv/send(xxx)` —— 收发数据
+- `socket.close()` —— 关闭套接字
+
+```python
+from socket import *
+
+# SOCK_STREAM表示tcp通信
+serverSocket = socket(AF_INET, SOCK_STREAM)
+
+# 绑定端口
+serverSocket.bind(("", 7788))
+
+# 将主动套接字变为被动套接字
+serverSocket.listen(5)
+
+# 等待连接，会有一个新的server用于传输数据
+clientServer, clientInfo = serverSocket.accept()
+
+# 等待收数据
+recv_data = clientServer.recv(1024)
+print("%s: %s" % clientInfo, recv_data.decode("gb2312"))
+
+serverSocket.close()
+clientSocket.close()
+```
+
+##### （3）tcp客户端
+
+- `connect(xxx)`，连接服务器
+- `send(xxx)`，发送数据
+- `recv(xxx)`，接收数据
+- 不再需要向udp那样`sendto() / recvfrom()`中填写对方ip和port，因为一开始已经连接好
+
+```python
+from socket import *
+
+clientSocket = socket(AF_INET, SOCK_STREAM)
+clientSocket.connect(("192.168.25.3", 7788))
+
+clientSocket.send(b'haha')
+recv_data = clientSocket.recv(1024)
+print(recv_data)
+
+clientSocket.close()
+```
+
+##### （4）tcp断开连接
+
+- 收到的数据长度 > 0 为链接状态
+- 断开链接时数据长度 = 0
+
+### （三）网络通信过程 TCP

@@ -1416,4 +1416,64 @@ clientSocket.close()
 - 收到的数据长度 > 0 为链接状态
 - 断开链接时数据长度 = 0
 
-### （三）网络通信过程 TCP
+
+
+### （三）网络通信过程
+
+#### 1 packet tracer介绍
+
+##### （1）小知识点
+
+- 两台电脑通信前提？
+  - 在同一网段内
+- 多台电脑间为啥不能直接把网线剪开链接在一起？
+  - 靠电信号传输数据，接一起电信号就乱了
+- 链接多台电脑的hub（集线器，现在已经被交换机代替）的作用？
+  - 将多台电脑链接在一起，组一个小型局域网
+- 集线器和交换机的区别？
+  - 集线器收到的数据都以广播的形式发送出去
+  - 交换机有一个学习的过程，第一次是广播，但学习到路径之后，后面的就不用再广播传了
+
+##### （2）交换机组网
+
+同一个局域网内互相`ping`
+
+- 得有对方的MAC地址才能ping通
+  - 第一次：PC发送一个ARP的广播，由交换机广播出去；对应IP的PC接收到广播后，返回一个ARP；交换机记下该IP的MAC地址；再把这个ARP返回给原PC；然后才发送ping的ICMP包
+  - <img src="https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-3-1-2_%E4%BA%A4%E6%8D%A2%E6%9C%BAping%E6%B5%81%E7%A8%8B.gif" width=50%>
+  - 第二次：交换机已经记住了另一台电脑的MAC地址，直接发送ICMP包就行了
+  - <img src="https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-3-1-2_%E4%BA%A4%E6%8D%A2%E6%9C%BA%E6%B5%81%E7%A8%8B%E8%A7%A3%E9%87%8A.jpg"/>
+
+##### （3）路由器组网
+
+路由器的作用
+
+- 链接不同网段的电脑，使其可以通信
+  - 使用交换机只能在同一个网段内通信，即便把两个网段的交换机用网线连起来也不能用
+- 配置
+  - <img src="https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-3-1-3_%E8%B7%AF%E7%94%B1%E5%99%A8%E7%BB%84%E7%BD%91.jpg" width=70% />
+  - 左边一个网段，右边一个网段；路由器的两侧的网卡链接不同的网段；每个主机网关要配置成路由器的IP
+- 多路由器组网配置
+  - <img src="https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-3-1-3_%E5%A4%9A%E8%B7%AF%E7%94%B1%E5%99%A8%E7%BB%84%E7%BD%911.jpg" width=70%/>
+  - 这里还需要给每一个路由器写好路由表
+    - 比如192.168.1.x的PC给192.168.2.x的PC通信，传到第一个路由器的时候，路由器不知道该把包往哪里发，就需要手动配置一下（下图是第一个路由器的配置）
+    - 将包转给第二个路由器；来回的路线都需要配置
+    - <img src="https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-3-1-3_%E8%B7%AF%E7%94%B1%E5%99%A8%E7%9A%84%E9%9D%99%E6%80%81%E8%B7%AF%E7%94%B1%E9%85%8D%E7%BD%AE.jpg"/>
+
+#### 2 通信过程
+
+##### （1）★ mac地址和ip地址用途
+
+- mac地址：在两个设备之间通信时会变化，指向的是下一个终端
+- ip地址：整个通信过程中都不会变化，一直指向的最终的位置
+- ip：标记逻辑上的地址
+- mac：标记实际转发数据时的设备地址
+- netmask：和ip地址一起确定网络号
+- 默认网关：发送的ip不再同一个网段内，就会把这个数据转发给网关
+
+##### （2）DNS
+
+- dns协议是用来解析域名的一个协议
+  - 一个dns服务器上存了很多域名对应的ip地址
+  - 相当于一个电话簿，姓名-域名， 电话-ip地址
+- 在终端PC上要配置DNS服务器地址

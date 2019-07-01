@@ -1503,3 +1503,4 @@ clientSocket.close()
 - TCP为保证数据的安全性，每次发送数据后，对方都会发送一个ACK应答码（表示接收到数据）
 
 <img src="https://raw.githubusercontent.com/shuopic/ImgBed/master/%E4%BC%A0%E6%99%BApython%E5%B0%B1%E4%B8%9A%E7%8F%AD/2-3-3-2-4_tcp%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B.jpg"/>
+
